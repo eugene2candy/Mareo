@@ -1,3 +1,5 @@
+open Belt;
+
 open Sprite;
 
 open Object;
@@ -11,7 +13,7 @@ type keys = {
   mutable right: bool,
   mutable up: bool,
   mutable down: bool,
-  mutable bbox: int
+  mutable bbox: int,
 };
 
 /*st represents the state of the game. It includes a background sprite (e.g.,
@@ -29,11 +31,17 @@ type st = {
   mutable score: int,
   mutable coins: int,
   mutable multiplier: int,
-  mutable game_over: bool
+  mutable game_over: bool,
 };
 
 /*pressed_keys instantiates the keys.*/
-let pressed_keys = {left: false, right: false, up: false, down: false, bbox: 0};
+let pressed_keys = {
+  left: false,
+  right: false,
+  up: false,
+  down: false,
+  bbox: 0,
+};
 
 let collid_objs = ref([]); /* List of next iteration collidable objects */
 
@@ -44,7 +52,7 @@ let last_time = ref(0.); /* Used for calculating fps */
 /* Calculates fps as the difference between [t0] and [t1] */
 let calc_fps = (t0, t1) => {
   let delta = (t1 -. t0) /. 1000.;
-  1. /. delta
+  1. /. delta;
 };
 
 /* Adds [i] to the score in [state] */
@@ -59,50 +67,51 @@ let player_attack_enemy = (s1, o1, typ, s2, o2, state, context) => {
   o1.invuln = 10;
   o1.jumping = false;
   o1.grounded = true;
-  switch typ {
+  switch (typ) {
   | GKoopaShell
   | RKoopaShell =>
     let r2 = evolve_enemy(o1.dir, typ, s2, o2, context);
     o1.vel.y = -. dampen_jump;
     o1.pos.y = o1.pos.y -. 5.;
-    (None, r2)
+    (None, r2);
   | _ =>
     dec_health(o2);
     o1.vel.y = -. dampen_jump;
     if (state.multiplier == 8) {
       update_score(state, 800);
       o2.score = 800;
-      (None, evolve_enemy(o1.dir, typ, s2, o2, context))
+      (None, evolve_enemy(o1.dir, typ, s2, o2, context));
     } else {
       let score = 100 * state.multiplier;
       update_score(state, score);
       o2.score = score;
       state.multiplier = state.multiplier * 2;
-      (None, evolve_enemy(o1.dir, typ, s2, o2, context))
-    }
-  }
+      (None, evolve_enemy(o1.dir, typ, s2, o2, context));
+    };
+  };
 };
 
 /*enemy_attack_player is used when an enemy kills a player.*/
-let enemy_attack_player = (s1, o1: Object.obj, t2, s2, o2: Object.obj, context) => {
+let enemy_attack_player =
+    (s1, o1: Object.obj, t2, s2, o2: Object.obj, context) => {
   ignore(s1);
-  switch t2 {
+  switch (t2) {
   | GKoopaShell
   | RKoopaShell =>
     let r2 =
       if (o2.vel.x == 0.) {
-        evolve_enemy(o1.dir, t2, s2, o2, context)
+        evolve_enemy(o1.dir, t2, s2, o2, context);
       } else {
         dec_health(o1);
         o1.invuln = invuln;
-        None
+        None;
       };
-    (None, r2)
+    (None, r2);
   | _ =>
     dec_health(o1);
     o1.invuln = invuln;
-    (None, None)
-  }
+    (None, None);
+  };
 };
 
 /*In the case that two enemies collide, they are to reverse directions. However,
@@ -116,32 +125,32 @@ let col_enemy_enemy = (t1, s1, o1, t2, s2, o2, dir) =>
   | (RKoopaShell, GKoopaShell) =>
     dec_health(o1);
     dec_health(o2);
-    (None, None)
+    (None, None);
   | (RKoopaShell, _)
   | (GKoopaShell, _) =>
     if (o1.vel.x == 0.) {
       rev_dir(o2, t2, s2);
-      (None, None)
+      (None, None);
     } else {
       dec_health(o2);
-      (None, None)
+      (None, None);
     }
   | (_, RKoopaShell)
   | (_, GKoopaShell) =>
     if (o2.vel.x == 0.) {
       rev_dir(o1, t1, s1);
-      (None, None)
+      (None, None);
     } else {
       dec_health(o1);
-      (None, None)
+      (None, None);
     }
   | (_, _) =>
-    switch dir {
+    switch (dir) {
     | West
     | East =>
       rev_dir(o1, t1, s1);
       rev_dir(o2, t2, s2);
-      (None, None)
+      (None, None);
     | _ => (None, None)
     }
   };
@@ -174,41 +183,47 @@ let col_enemy_enemy = (t1, s1, o1, t2, s2, o2, dir) =>
  * no new item should be spawned. Transformations to existing objects occur
  * mutably, as many changes are side-effectual.*/
 let process_collision =
-    (dir: Actors.dir_2d, c1: Object.collidable, c2: Object.collidable, state: st)
-    : (option(Object.collidable), option(Object.collidable)) => {
+    (
+      dir: Actors.dir_2d,
+      c1: Object.collidable,
+      c2: Object.collidable,
+      state: st,
+    ) => {
   let context = state.ctx;
   switch (c1, c2, dir) {
   | (Player(_, s1, o1), Enemy(typ, s2, o2), South)
   | (Enemy(typ, s2, o2), Player(_, s1, o1), North) =>
     player_attack_enemy(s1, o1, typ, s2, o2, state, context)
   | (Player(_, s1, o1), Enemy(t2, s2, o2), _)
-  | (Enemy(t2, s2, o2), Player(_, s1, o1), _) => enemy_attack_player(s1, o1, t2, s2, o2, context)
+  | (Enemy(t2, s2, o2), Player(_, s1, o1), _) =>
+    enemy_attack_player(s1, o1, t2, s2, o2, context)
   | (Player(_, _, o1), Item(t2, _, o2), _)
   | (Item(t2, _, o2), Player(_, _, o1), _) =>
-    switch t2 {
+    switch (t2) {
     | Mushroom =>
       dec_health(o2);
       if (o1.health == 2) {
-        ()
+        ();
       } else {
-        o1.health = o1.health + 1
+        o1.health = o1.health + 1;
       };
       o1.vel.x = 0.;
       o1.vel.y = 0.;
       update_score(state, 1000);
       o2.score = 1000;
-      (None, None)
+      (None, None);
     | Coin =>
       state.coins = state.coins + 1;
       dec_health(o2);
       update_score(state, 100);
-      (None, None)
+      (None, None);
     | _ =>
       dec_health(o2);
       update_score(state, 1000);
-      (None, None)
+      (None, None);
     }
-  | (Enemy(t1, s1, o1), Enemy(t2, s2, o2), dir) => col_enemy_enemy(t1, s1, o1, t2, s2, o2, dir)
+  | (Enemy(t1, s1, o1), Enemy(t2, s2, o2), dir) =>
+    col_enemy_enemy(t1, s1, o1, t2, s2, o2, dir)
   | (Enemy(t1, s1, o1), Block(t2, _, o2), East)
   | (Enemy(t1, s1, o1), Block(t2, _, o2), West) =>
     switch (t1, t2) {
@@ -216,78 +231,76 @@ let process_collision =
     | (GKoopaShell, Brick) =>
       dec_health(o2);
       reverse_left_right(o1);
-      (None, None)
+      (None, None);
     | (RKoopaShell, QBlock(typ))
     | (GKoopaShell, QBlock(typ)) =>
       let updated_block = evolve_block(o2, context);
       let spawned_item = spawn_above(o1.dir, o2, typ, context);
       rev_dir(o1, t1, s1);
-      (Some(updated_block), Some(spawned_item))
+      (Some(updated_block), Some(spawned_item));
     | (_, _) =>
       rev_dir(o1, t1, s1);
-      (None, None)
+      (None, None);
     }
   | (Item(_, _, o1), Block(_, _, _), East)
   | (Item(_, _, o1), Block(_, _, _), West) =>
     reverse_left_right(o1);
-    (None, None)
+    (None, None);
   | (Enemy(_, _, o1), Block(_, _, _), _)
   | (Item(_, _, o1), Block(_, _, _), _) =>
     collide_block(dir, o1);
-    (None, None)
+    (None, None);
   | (Player(t1, _, o1), Block(t, _, o2), North) =>
-    switch t {
+    switch (t) {
     | QBlock(typ) =>
       let updated_block = evolve_block(o2, context);
       let spawned_item = spawn_above(o1.dir, o2, typ, context);
       collide_block(dir, o1);
-      (Some(spawned_item), Some(updated_block))
+      (Some(spawned_item), Some(updated_block));
     | Brick =>
       if (t1 == BigM) {
         collide_block(dir, o1);
         dec_health(o2);
-        (None, None)
+        (None, None);
       } else {
         collide_block(dir, o1);
-        (None, None)
+        (None, None);
       }
     | Panel =>
       Draw.game_win(state.ctx);
-      (None, None)
+      (None, None);
     | _ =>
       collide_block(dir, o1);
-      (None, None)
+      (None, None);
     }
   | (Player(_, _, o1), Block(t, _, _), _) =>
-    switch t {
+    switch (t) {
     | Panel =>
       Draw.game_win(state.ctx);
-      (None, None)
+      (None, None);
     | _ =>
-      switch dir {
+      switch (dir) {
       | South =>
         state.multiplier = 1;
         collide_block(dir, o1);
-        (None, None)
+        (None, None);
       | _ =>
         collide_block(dir, o1);
-        (None, None)
+        (None, None);
       }
     }
   | (_, _, _) => (None, None)
-  }
+  };
 };
 
 /* Run the broad phase object filtering */
 let broad_phase = (collid, all_collids, state) => {
   let obj = get_obj(collid);
-  List.filter(
-    (_c) =>
-      Viewport.in_viewport(state.vpt, obj.pos)
-      || is_player(collid)
-      || Viewport.out_of_viewport_below(state.vpt, obj.pos.y),
-    all_collids
-  )
+  List.keep(all_collids, _c =>
+    Viewport.in_viewport(state.vpt, obj.pos)
+    || is_player(collid)
+    || Viewport.out_of_viewport_below(state.vpt, obj.pos.y)
+  );
 };
 
 /*narrow_phase of collision is used in order to continuously loop through
@@ -295,7 +308,7 @@ let broad_phase = (collid, all_collids, state) => {
  *occurring.*/
 let narrow_phase = (c, cs, state) => {
   let rec narrow_helper = (c, cs, state, acc) =>
-    switch cs {
+    switch (cs) {
     | [] => acc
     | [h, ...t] =>
       let c_obj = get_obj(c);
@@ -315,25 +328,25 @@ let narrow_phase = (c, cs, state) => {
                 dir,
                 c,
                 h,
-                state
-              )
+                state,
+              );
             } else {
-              (None, None)
+              (None, None);
             }
-          }
+          };
         } else {
-          (None, None)
+          (None, None);
         };
       let acc =
-        switch new_objs {
+        switch (new_objs) {
         | (None, Some(o)) => [o, ...acc]
         | (Some(o), None) => [o, ...acc]
         | (Some(o1), Some(o2)) => [o1, o2, ...acc]
         | (None, None) => acc
         };
-      narrow_helper(c, t, state, acc)
+      narrow_helper(c, t, state, acc);
     };
-  narrow_helper(c, cs, state, [])
+  narrow_helper(c, cs, state, []);
 };
 
 /* This is an optimization setp to determine which objects require narrow phase
@@ -348,11 +361,11 @@ let narrow_phase = (c, cs, state) => {
  * added to the list of collidables for the next iteration.
  * */
 let check_collisions = (collid, all_collids, state) =>
-  switch collid {
+  switch (collid) {
   | Block(_, _, _) => []
   | _ =>
     let broad = broad_phase(collid, all_collids, state);
-    narrow_phase(collid, broad, state)
+    narrow_phase(collid, broad, state);
   };
 
 /* Returns whether the bounding box should be drawn */
@@ -366,9 +379,9 @@ let update_collidable = (state, collid: Object.collidable, all_collids) => {
   let spr = Object.get_sprite(collid);
   obj.invuln = (
     if (obj.invuln > 0) {
-      obj.invuln - 1
+      obj.invuln - 1;
     } else {
-      0
+      0;
     }
   );
   /* Prevent position from being updated outside of viewport */
@@ -385,32 +398,34 @@ let update_collidable = (state, collid: Object.collidable, all_collids) => {
     let vpt_adj_xy = Viewport.coord_to_viewport(state.vpt, obj.pos);
     Draw.render(spr, (vpt_adj_xy.x, vpt_adj_xy.y));
     if (check_bbox_enabled()) {
-      Draw.render_bbox(spr, (vpt_adj_xy.x, vpt_adj_xy.y))
+      Draw.render_bbox(spr, (vpt_adj_xy.x, vpt_adj_xy.y));
     };
     if (obj.vel.x != 0. || ! is_enemy(collid)) {
-      Sprite.update_animation(spr)
+      Sprite.update_animation(spr);
     };
-    evolved
+    evolved;
   } else {
-    []
-  }
+    [];
+  };
 };
 
 /* Converts a keypress to a list of control keys, allowing more than one key
  * to be processed each frame. */
 let translate_keys = () => {
   let k = pressed_keys;
-  let ctrls = [(k.left, CLeft), (k.right, CRight), (k.up, CUp), (k.down, CDown)];
-  List.fold_left(
-    (a, x) =>
-      if (fst(x)) {
-        [snd(x), ...a]
-      } else {
-        a
-      },
-    [],
-    ctrls
-  )
+  let ctrls = [
+    (k.left, CLeft),
+    (k.right, CRight),
+    (k.up, CUp),
+    (k.down, CDown),
+  ];
+  List.reduce(ctrls, [], (a, x) =>
+    if (fst(x)) {
+      [snd(x), ...a];
+    } else {
+      a;
+    }
+  );
 };
 
 /* run_update is used to update all of the collidables at once. Primarily used
@@ -418,7 +433,7 @@ let translate_keys = () => {
  * the player collidable and the remaining collidables, as special operations
  * such as viewport centering only occur with the player.*/
 let run_update_collid = (state, collid, all_collids) =>
-  switch collid {
+  switch (collid) {
   | Player(_, s, o) as p =>
     let keys = translate_keys();
     o.crouch = false;
@@ -427,25 +442,25 @@ let run_update_collid = (state, collid, all_collids) =>
       | None => p
       | Some((new_typ, new_spr)) =>
         Object.normalize_pos(o.pos, s.params, new_spr.params);
-        Player(new_typ, new_spr, o)
+        Player(new_typ, new_spr, o);
       };
     let evolved = update_collidable(state, player, all_collids);
     collid_objs := collid_objs^ @ evolved;
-    player
+    player;
   | _ =>
     let obj = get_obj(collid);
     let evolved = update_collidable(state, collid, all_collids);
     if (! obj.kill) {
-      collid_objs := [collid, ...collid_objs^ @ evolved]
+      collid_objs := [collid, ...collid_objs^ @ evolved];
     };
     let new_parts =
       if (obj.kill) {
-        Object.kill(collid, state.ctx)
+        Object.kill(collid, state.ctx);
       } else {
-        []
+        [];
       };
     particles := particles^ @ new_parts;
-    collid
+    collid;
   };
 
 /* Primary update function to update and persist a particle */
@@ -455,8 +470,8 @@ let run_update_particle = (state, part) => {
   and y = part.pos.y -. state.vpt.pos.y;
   Draw.render(part.params.sprite, (x, y));
   if (! part.kill) {
-    particles := [part, ...particles^]
-  }
+    particles := [part, ...particles^];
+  };
 };
 
 /*update_loop is constantly being called to check for collisions and to
@@ -464,8 +479,10 @@ let run_update_particle = (state, part) => {
 let update_loop = (canvas, (player, objs), map_dim) => {
   let scale = 1.;
   let ctx = Dom_html.canvasElementToJsObj(canvas)##getContext("2d");
-  let cwidth = float_of_int(Dom_html.canvasElementToJsObj(canvas)##width) /. scale;
-  let cheight = float_of_int(Dom_html.canvasElementToJsObj(canvas)##height) /. scale;
+  let cwidth =
+    float_of_int(Dom_html.canvasElementToJsObj(canvas)##width) /. scale;
+  let cheight =
+    float_of_int(Dom_html.canvasElementToJsObj(canvas)##height) /. scale;
   let viewport = Viewport.make((cwidth, cheight), map_dim);
   let state = {
     bgd: Sprite.make_bgd(ctx),
@@ -475,12 +492,14 @@ let update_loop = (canvas, (player, objs), map_dim) => {
     coins: 0,
     multiplier: 1,
     map: snd(map_dim),
-    game_over: false
+    game_over: false,
   };
-  ignore(Dom_html.canvasRenderingContext2DToJsObj(state.ctx)##scale(scale, scale));
+  ignore(
+    Dom_html.canvasRenderingContext2DToJsObj(state.ctx)##scale(scale, scale),
+  );
   let rec update_helper = (time, state, player, objs, parts) =>
     if (state.game_over == true) {
-      Draw.game_win(state.ctx)
+      Draw.game_win(state.ctx);
     } else {
       collid_objs := [];
       particles := [];
@@ -493,27 +512,32 @@ let update_loop = (canvas, (player, objs), map_dim) => {
       Draw.draw_bgd(state.bgd, float_of_int(vpos_x_int mod bgd_width));
       let player = run_update_collid(state, player, objs);
       if (get_obj(player).kill == true) {
-        Draw.game_loss(state.ctx)
+        Draw.game_loss(state.ctx);
       } else {
-        let state = {...state, vpt: Viewport.update(state.vpt, get_obj(player).pos)};
-        List.iter((obj) => ignore(run_update_collid(state, obj, objs)), objs);
-        List.iter((part) => run_update_particle(state, part), parts);
+        let state = {
+          ...state,
+          vpt: Viewport.update(state.vpt, get_obj(player).pos),
+        };
+        List.forEach(objs, obj =>
+          ignore(run_update_collid(state, obj, objs))
+        );
+        List.forEach(parts, part => run_update_particle(state, part));
         Draw.fps(canvas, fps);
         Draw.hud(canvas, state.score, state.coins);
         ignore @@
-        Dom_html.requestAnimationFrame(
-          (t: float) => update_helper(t, state, player, collid_objs^, particles^)
-        )
-      }
+        Dom_html.requestAnimationFrame((t: float) =>
+          update_helper(t, state, player, collid_objs^, particles^)
+        );
+      };
     };
-  update_helper(0., state, player, objs, [])
+  update_helper(0., state, player, objs, []);
 };
 
 /* Keydown event handler translates a key press */
-let keydown = (evt) => {
+let keydown = evt => {
   let evt = Dom_html.keyboardEventToJsObj(evt);
   let () =
-    switch evt##keyCode {
+    switch (evt##keyCode) {
     | 38
     | 32
     | 87 => pressed_keys.up = true
@@ -526,14 +550,14 @@ let keydown = (evt) => {
     | 66 => pressed_keys.bbox = (pressed_keys.bbox + 1) mod 2
     | _ => ()
     };
-  Js.true_
+  Js.true_;
 };
 
 /* Keyup event handler translates a key release */
-let keyup = (evt) => {
+let keyup = evt => {
   let evt = Dom_html.keyboardEventToJsObj(evt);
   let () =
-    switch evt##keyCode {
+    switch (evt##keyCode) {
     | 38
     | 32
     | 87 => pressed_keys.up = false
@@ -545,5 +569,5 @@ let keyup = (evt) => {
     | 83 => pressed_keys.down = false
     | _ => ()
     };
-  Js.true_
+  Js.true_;
 };

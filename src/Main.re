@@ -1,5 +1,7 @@
 [@bs.config {no_export: no_export}];
 
+open Belt;
+
 module Html = Dom_html;
 
 module Pg = Procedural_generator;
@@ -50,6 +52,7 @@ let preload = (_) => {
   let root_dir = "sprites/";
   let imgs = ["blocks.png", "items.png", "enemies.png", "mario-small.png"];
   List.map(
+    imgs,
     (img_src) => {
       let img_src = root_dir ++ img_src;
       let img = Html.createImg(Dom_html.document);
@@ -65,8 +68,7 @@ let preload = (_) => {
           Js.true_
         )
       )
-    },
-    imgs
+    }
   )
 };
 
