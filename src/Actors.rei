@@ -40,7 +40,7 @@ type enemy_typ =
   | RKoopaShell;
 
 type block_typ =
-  | QBlock item_typ
+  | QBlock(item_typ)
   | QBlockUsed
   | Brick
   | UnBBlock
@@ -75,8 +75,8 @@ type part_typ =
     | Brick
   | */
 type spawn_typ =
-  | SPlayer pl_typ player_typ
-  | SEnemy enemy_typ
-  | SItem item_typ
-  | SBlock block_typ;
+  | SPlayer(pl_typ, player_typ)
+  | SEnemy(enemy_typ)
+  | SItem(item_typ)
+  | SBlock(block_typ);
 /*| SGround of ground_typ*/
