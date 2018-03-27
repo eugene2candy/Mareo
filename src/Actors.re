@@ -10,7 +10,7 @@ type dir_2d =
 
 type xy = {
   mutable x: float,
-  mutable y: float
+  mutable y: float,
 };
 
 type controls =

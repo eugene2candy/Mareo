@@ -17,43 +17,55 @@ let level_height = 256.;
 /*Canvas is chosen from the index.html file. The context is obtained from
  *the canvas. Listeners are added. A level is generated and the general
  *update_loop method is called to make the level playable.*/
-let load = (_) => {
+let load = _ => {
   Random.self_init();
   let canvas_id = "canvas";
   let canvas =
     switch (Dom_html.getElementById(Dom_html.document, canvas_id)) {
     | None =>
       print_endline("cant find canvas " ++ canvas_id ++ " \n");
-      failwith("fail")
+      failwith("fail");
     | Some(el) => Dom_html.elementToCanvasElement(el)
     };
   let context = Dom_html.canvasElementToJsObj(canvas)##getContext("2d");
-  let _ = Dom_html.addEventListener(Dom_html.document, "keydown", Director.keydown, Js.true_);
-  let _ = Dom_html.addEventListener(Dom_html.document, "keyup", Director.keyup, Js.true_);
+  let _ =
+    Dom_html.addEventListener(
+      Dom_html.document,
+      "keydown",
+      Director.keydown,
+      Js.true_,
+    );
+  let _ =
+    Dom_html.addEventListener(
+      Dom_html.document,
+      "keyup",
+      Director.keyup,
+      Js.true_,
+    );
   let () = Pg.init();
   Director.update_loop(
     canvas,
     Pg.generate(level_width, level_height, context),
-    (level_width, level_height)
-  )
+    (level_width, level_height),
+  );
 };
 
-let inc_counter = (_) => {
+let inc_counter = _ => {
   loadCount := loadCount^ + 1;
   if (loadCount^ == imgsToLoad) {
-    load()
+    load();
   } else {
-    ()
-  }
+    ();
+  };
 };
 
 /*Used for concurrency issues.*/
-let preload = (_) => {
+let preload = _ => {
   let root_dir = "sprites/";
   let imgs = ["blocks.png", "items.png", "enemies.png", "mario-small.png"];
   List.map(
     imgs,
-    (img_src) => {
+    img_src => {
       let img_src = root_dir ++ img_src;
       let img = Html.createImg(Dom_html.document);
       Dom_html.imageElementToJsObj(img)##src#=img_src;
@@ -61,20 +73,20 @@ let preload = (_) => {
         Dom_html.addEventListenerImg(
           img,
           "load",
-          (_ev) => {
+          _ev => {
             inc_counter();
-            Js.true_
+            Js.true_;
           },
-          Js.true_
-        )
-      )
-    }
-  )
+          Js.true_,
+        ),
+      );
+    },
+  );
 };
 
 Dom_html.windowToJsObj(Dom_html.window)##onload#=(
-                                                   (_) => {
-                                                     ignore(preload());
-                                                     Js.true_
-                                                   }
-                                                 );
+                                                    _ => {
+                                                      ignore(preload());
+                                                      Js.true_;
+                                                    }
+                                                  );

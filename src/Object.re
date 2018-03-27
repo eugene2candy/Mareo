@@ -21,12 +21,12 @@ let invuln = 60;
 
 type aabb = {
   center: xy,
-  half: xy
+  half: xy,
 };
 
 type obj_params = {
   has_gravity: bool,
-  speed: float
+  speed: float,
 };
 
 let id_counter = ref(min_int);
@@ -43,7 +43,7 @@ type obj = {
   mutable kill: bool,
   mutable health: int,
   mutable crouch: bool,
-  mutable score: int
+  mutable score: int,
 };
 
 type collidable =
@@ -53,16 +53,19 @@ type collidable =
   | Block(block_typ, Sprite.sprite, obj);
 
 /*setup_obj is used to set gravity and speed, with default values true and 1.*/
-let setup_obj = (~g as has_gravity=true, ~spd as speed=1., ()) => {has_gravity, speed};
+let setup_obj = (~g as has_gravity=true, ~spd as speed=1., ()) => {
+  has_gravity,
+  speed,
+};
 
 /* Sets an object's x velocity to the speed specified in its params based on
  * its direction */
-let set_vel_to_speed = (obj) => {
+let set_vel_to_speed = obj => {
   let speed = obj.params.speed;
-  switch obj.dir {
+  switch (obj.dir) {
   | Left => obj.vel.x = -. speed
   | Right => obj.vel.x = speed
-  }
+  };
 };
 
 /* The following make functions all set the objects' has_gravity and speed,
@@ -105,7 +108,7 @@ let make_type =
 /*Used in object creation and to compare two objects.*/
 let new_id = () => {
   id_counter := id_counter^ + 1;
-  id_counter^
+  id_counter^;
 };
 
 /*Used to return a new sprite and object of a created spawnable object*/
@@ -113,7 +116,7 @@ let make = (~id=None, ~dir=Left, spawnable, context, (posx, posy)) => {
   let spr = Sprite.make(spawnable, dir, context);
   let params = make_type(spawnable);
   let id =
-    switch id {
+    switch (id) {
     | None => new_id()
     | Some(n) => n
     };
@@ -121,11 +124,11 @@ let make = (~id=None, ~dir=Left, spawnable, context, (posx, posy)) => {
     params,
     pos: {
       x: posx,
-      y: posy
+      y: posy,
     },
     vel: {
       x: 0.0,
-      y: 0.0
+      y: 0.0,
     },
     id,
     jumping: false,
@@ -135,22 +138,22 @@ let make = (~id=None, ~dir=Left, spawnable, context, (posx, posy)) => {
     kill: false,
     health: 1,
     crouch: false,
-    score: 0
+    score: 0,
   };
-  (spr, obj)
+  (spr, obj);
 };
 
 /*spawn returns a new collidable*/
 let spawn = (spawnable, context, (posx, posy)) => {
   let (spr, obj) = make(spawnable, context, (posx, posy));
-  switch spawnable {
+  switch (spawnable) {
   | SPlayer(typ, _) => Player(typ, spr, obj)
   | SEnemy(t) =>
     set_vel_to_speed(obj);
-    Enemy(t, spr, obj)
+    Enemy(t, spr, obj);
   | SItem(t) => Item(t, spr, obj)
   | SBlock(t) => Block(t, spr, obj)
-  }
+  };
 };
 
 /*Helper methods for getting sprites and objects from their collidables*/
@@ -183,33 +186,36 @@ let equals = (col1, col2) => get_obj(col1).id == get_obj(col2).id;
 /*Matches the controls being used and updates each of the player's params.*/
 let update_player_keys = (player: obj, controls: controls) : unit => {
   let lr_acc = player.vel.x *. 0.2;
-  switch controls {
+  switch (controls) {
   | CLeft =>
     if (! player.crouch) {
       if (player.vel.x > -. player.params.speed) {
-        player.vel.x = player.vel.x -. (0.4 -. lr_acc)
+        player.vel.x = player.vel.x -. (0.4 -. lr_acc);
       };
-      player.dir = Left
+      player.dir = Left;
     }
   | CRight =>
     if (! player.crouch) {
       if (player.vel.x < player.params.speed) {
-        player.vel.x = player.vel.x +. (0.4 +. lr_acc)
+        player.vel.x = player.vel.x +. (0.4 +. lr_acc);
       };
-      player.dir = Right
+      player.dir = Right;
     }
   | CUp =>
     if (! player.jumping && player.grounded) {
       player.jumping = true;
       player.grounded = false;
       player.vel.y =
-        max(player.vel.y -. (player_jump +. abs_float(player.vel.x) *. 0.25), player_max_jump)
+        max(
+          player.vel.y -. (player_jump +. abs_float(player.vel.x) *. 0.25),
+          player_max_jump,
+        );
     }
   | CDown =>
     if (! player.jumping && player.grounded) {
-      player.crouch = true
+      player.crouch = true;
     }
-  }
+  };
 };
 
 /*Used for sprite changing. If sprites change to different dimensions as a result
@@ -221,7 +227,7 @@ let normalize_pos = (pos, p1: Sprite.sprite_params, p2: Sprite.sprite_params) =>
   let (bw1, bh1) = p1.bbox_size
   and (bw2, bh2) = p2.bbox_size;
   pos.x = pos.x -. (bw2 +. box2) +. (bw1 +. box1);
-  pos.y = pos.y -. (bh2 +. boy2) +. (bh1 +. boy1)
+  pos.y = pos.y -. (bh2 +. boy2) +. (bh1 +. boy1);
 };
 
 /*Update player is constantly being called to check for if big or small
@@ -234,47 +240,63 @@ let update_player = (player, keys, context) => {
   let v = player.vel.x *. friction;
   let vel_damped =
     if (abs_float(v) < 0.1) {
-      0.
+      0.;
     } else {
-      v
+      v;
     };
   player.vel.x = vel_damped;
   let pl_typ =
     if (player.health <= 1) {
-      SmallM
+      SmallM;
     } else {
-      BigM
+      BigM;
     };
   if (! prev_jumping && player.jumping) {
-    Some((pl_typ, Sprite.make(SPlayer(pl_typ, Jumping), player.dir, context)))
+    Some((
+      pl_typ,
+      Sprite.make(SPlayer(pl_typ, Jumping), player.dir, context),
+    ));
   } else if (prev_dir != player.dir
              || (prev_vx == 0. && abs_float(player.vel.x) > 0.)
              && ! player.jumping) {
-    Some((pl_typ, Sprite.make(SPlayer(pl_typ, Running), player.dir, context)))
+    Some((
+      pl_typ,
+      Sprite.make(SPlayer(pl_typ, Running), player.dir, context),
+    ));
   } else if (prev_dir != player.dir && player.jumping && prev_jumping) {
-    Some((pl_typ, Sprite.make(SPlayer(pl_typ, Jumping), player.dir, context)))
+    Some((
+      pl_typ,
+      Sprite.make(SPlayer(pl_typ, Jumping), player.dir, context),
+    ));
   } else if (player.vel.y == 0. && player.crouch) {
-    Some((pl_typ, Sprite.make(SPlayer(pl_typ, Crouching), player.dir, context)))
+    Some((
+      pl_typ,
+      Sprite.make(SPlayer(pl_typ, Crouching), player.dir, context),
+    ));
   } else if (player.vel.y == 0. && player.vel.x == 0.) {
-    Some((pl_typ, Sprite.make(SPlayer(pl_typ, Standing), player.dir, context)))
+    Some((
+      pl_typ,
+      Sprite.make(SPlayer(pl_typ, Standing), player.dir, context),
+    ));
   } else {
-    None
-  }
+    None;
+  };
 };
 
 /*The following two helper methods update velocity and position of the player*/
-let update_vel = (obj) =>
+let update_vel = obj =>
   if (obj.grounded) {
-    obj.vel.y = 0.
+    obj.vel.y = 0.;
   } else if (obj.params.has_gravity) {
-    obj.vel.y = min(obj.vel.y +. gravity +. abs_float(obj.vel.y) *. 0.01, max_y_vel)
+    obj.vel.y =
+      min(obj.vel.y +. gravity +. abs_float(obj.vel.y) *. 0.01, max_y_vel);
   };
 
-let update_pos = (obj) => {
+let update_pos = obj => {
   obj.pos.x = obj.vel.x +. obj.pos.x;
   if (obj.params.has_gravity) {
-    obj.pos.y = obj.vel.y +. obj.pos.y
-  }
+    obj.pos.y = obj.vel.y +. obj.pos.y;
+  };
 };
 
 /*Calls two above helper functions to update velocity and position of player.*/
@@ -282,8 +304,8 @@ let process_obj = (obj, mapy) => {
   update_vel(obj);
   update_pos(obj);
   if (obj.pos.y > mapy) {
-    obj.kill = true
-  }
+    obj.kill = true;
+  };
 };
 
 /* Converts an origin based on the bottom left of the bounding box to the top
@@ -293,64 +315,74 @@ let normalize_origin = (pos, spr: Sprite.sprite) => {
   let (box, boy) = p.bbox_offset
   and (_, bh) = p.bbox_size;
   pos.x = pos.x -. box;
-  pos.y = pos.y -. (boy +. bh)
+  pos.y = pos.y -. (boy +. bh);
 };
 
 /*Checks upon collision of block and updates the values of the object.*/
 let collide_block = (~check_x=true, dir, obj) =>
-  switch dir {
+  switch (dir) {
   | North => obj.vel.y = (-0.001)
   | South =>
     obj.vel.y = 0.;
     obj.grounded = true;
-    obj.jumping = false
+    obj.jumping = false;
   | East
   | West =>
     if (check_x) {
-      obj.vel.x = 0.
+      obj.vel.x = 0.;
     }
   };
 
 /*Simple helper method that reverses the direction in question*/
-let opposite_dir = (dir) =>
-  switch dir {
+let opposite_dir = dir =>
+  switch (dir) {
   | Left => Right
   | Right => Left
   };
 
 /*Used for enemy-enemy collisions*/
-let reverse_left_right = (obj) => {
+let reverse_left_right = obj => {
   obj.vel.x = -. obj.vel.x;
-  obj.dir = opposite_dir(obj.dir)
+  obj.dir = opposite_dir(obj.dir);
 };
 
 /*Actually creates a new enemy and deletes the previous. The positions must be
  *normalized. This method is typically called when enemies are killed and a
  *new sprite must be used (i.e., koopa to koopa shell). */
 let evolve_enemy = (player_dir, typ, spr: Sprite.sprite, obj, context) =>
-  switch typ {
+  switch (typ) {
   | GKoopa =>
     let (new_spr, new_obj) =
-      make(~dir=obj.dir, SEnemy(GKoopaShell), context, (obj.pos.x, obj.pos.y));
+      make(
+        ~dir=obj.dir,
+        SEnemy(GKoopaShell),
+        context,
+        (obj.pos.x, obj.pos.y),
+      );
     normalize_pos(new_obj.pos, spr.params, new_spr.params);
-    Some(Enemy(GKoopaShell, new_spr, new_obj))
+    Some(Enemy(GKoopaShell, new_spr, new_obj));
   | RKoopa =>
     let (new_spr, new_obj) =
-      make(~dir=obj.dir, SEnemy(RKoopaShell), context, (obj.pos.x, obj.pos.y));
+      make(
+        ~dir=obj.dir,
+        SEnemy(RKoopaShell),
+        context,
+        (obj.pos.x, obj.pos.y),
+      );
     normalize_pos(new_obj.pos, spr.params, new_spr.params);
-    Some(Enemy(RKoopaShell, new_spr, new_obj))
+    Some(Enemy(RKoopaShell, new_spr, new_obj));
   | GKoopaShell
   | RKoopaShell =>
     obj.dir = player_dir;
     if (obj.vel.x != 0.) {
-      obj.vel.x = 0.
+      obj.vel.x = 0.;
     } else {
-      set_vel_to_speed(obj)
+      set_vel_to_speed(obj);
     };
-    None
+    None;
   | _ =>
     obj.kill = true;
-    None
+    None;
   };
 
 /*Updates the direction of the sprite. */
@@ -358,24 +390,25 @@ let rev_dir = (o, t, s: Sprite.sprite) => {
   reverse_left_right(o);
   let old_params = s.params;
   Sprite.transform_enemy(t, s, o.dir);
-  normalize_pos(o.pos, old_params, s.params)
+  normalize_pos(o.pos, old_params, s.params);
 };
 
 /*Used for killing enemies, or to make big Mario into small Mario*/
-let dec_health = (obj) => {
+let dec_health = obj => {
   let health = obj.health - 1;
   if (health == 0) {
-    obj.kill = true
+    obj.kill = true;
   } else if (obj.invuln == 0) {
-    obj.health = health
-  }
+    obj.health = health;
+  };
 };
 
 /*Used for deleting a block and replacing it with a used block*/
 let evolve_block = (obj, context) => {
   dec_health(obj);
-  let (new_spr, new_obj) = make(SBlock(QBlockUsed), context, (obj.pos.x, obj.pos.y));
-  Block(QBlockUsed, new_spr, new_obj)
+  let (new_spr, new_obj) =
+    make(SBlock(QBlockUsed), context, (obj.pos.x, obj.pos.y));
+  Block(QBlockUsed, new_spr, new_obj);
 };
 
 /*Used for making a small Mario into a Big Mario*/
@@ -391,11 +424,11 @@ let spawn_above = (player_dir, obj, typ, context) => {
   item_obj.pos.y = item_obj.pos.y -. snd(get_sprite(item).params.frame_size);
   item_obj.dir = opposite_dir(player_dir);
   set_vel_to_speed(item_obj);
-  item
+  item;
 };
 
 /*Used to get the bounding box.*/
-let get_aabb = (obj) => {
+let get_aabb = obj => {
   let spr = get_sprite(obj).params;
   let obj = get_obj(obj);
   let (offx, offy) = spr.bbox_offset;
@@ -404,13 +437,13 @@ let get_aabb = (obj) => {
   {
     center: {
       x: box +. sx /. 2.,
-      y: boy +. sy /. 2.
+      y: boy +. sy /. 2.,
     },
     half: {
       x: sx /. 2.,
-      y: sy /. 2.
-    }
-  }
+      y: sy /. 2.,
+    },
+  };
 };
 
 let col_bypass = (c1, c2) => {
@@ -423,13 +456,13 @@ let col_bypass = (c1, c2) => {
     | (Item(_, _, _), Item(_, _, _)) => true
     | (Player(_, _, o1), Enemy(_, _, _)) =>
       if (o1.invuln > 0) {
-        true
+        true;
       } else {
-        false
+        false;
       }
     | _ => false
     };
-  o1.kill || o2.kill || ctypes
+  o1.kill || o2.kill || ctypes;
 };
 
 /*Used for checking if collisions occur. Compares half-widths and half-heights
@@ -440,7 +473,7 @@ let check_collision = (c1, c2) => {
   and b2 = get_aabb(c2);
   let o1 = get_obj(c1);
   if (col_bypass(c1, c2)) {
-    None
+    None;
   } else {
     let vx = b1.center.x -. b2.center.x;
     let vy = b1.center.y -. b2.center.y;
@@ -452,54 +485,82 @@ let check_collision = (c1, c2) => {
       if (ox >= oy) {
         if (vy > 0.) {
           o1.pos.y = o1.pos.y +. oy;
-          Some(North)
+          Some(North);
         } else {
           o1.pos.y = o1.pos.y -. oy;
-          Some(South)
-        }
+          Some(South);
+        };
       } else if (vx > 0.) {
         o1.pos.x = o1.pos.x +. ox;
-        Some(West)
+        Some(West);
       } else {
         o1.pos.x = o1.pos.x -. ox;
-        Some(East)
-      }
+        Some(East);
+      };
     } else {
-      None
-    }
-  }
+      None;
+    };
+  };
 };
 
 /*"Kills" the matched object by setting certain parameters for each.*/
 let kill = (collid, ctx) =>
-  switch collid {
+  switch (collid) {
   | Enemy(t, _, o) =>
     let pos = (o.pos.x, o.pos.y);
     let score =
       if (o.score > 0) {
-        [Particle.make_score(o.score, pos, ctx)]
+        [Particle.make_score(o.score, pos, ctx)];
       } else {
-        []
+        [];
       };
     let remains =
-      switch t {
+      switch (t) {
       | Goomba => [Particle.make(GoombaSquish, pos, ctx)]
       | _ => []
       };
-    score @ remains
+    score @ remains;
   | Block(t, _, o) =>
-    switch t {
+    switch (t) {
     | Brick =>
       let pos = (o.pos.x, o.pos.y);
-      let p1 = Particle.make(~vel=((-5.), (-5.)), ~acc=(0., 0.2), BrickChunkL, pos, ctx);
-      let p2 = Particle.make(~vel=((-3.), (-4.)), ~acc=(0., 0.2), BrickChunkL, pos, ctx);
-      let p3 = Particle.make(~vel=(3., (-4.)), ~acc=(0., 0.2), BrickChunkR, pos, ctx);
-      let p4 = Particle.make(~vel=(5., (-5.)), ~acc=(0., 0.2), BrickChunkR, pos, ctx);
-      [p1, p2, p3, p4]
+      let p1 =
+        Particle.make(
+          ~vel=((-5.), (-5.)),
+          ~acc=(0., 0.2),
+          BrickChunkL,
+          pos,
+          ctx,
+        );
+      let p2 =
+        Particle.make(
+          ~vel=((-3.), (-4.)),
+          ~acc=(0., 0.2),
+          BrickChunkL,
+          pos,
+          ctx,
+        );
+      let p3 =
+        Particle.make(
+          ~vel=(3., (-4.)),
+          ~acc=(0., 0.2),
+          BrickChunkR,
+          pos,
+          ctx,
+        );
+      let p4 =
+        Particle.make(
+          ~vel=(5., (-5.)),
+          ~acc=(0., 0.2),
+          BrickChunkR,
+          pos,
+          ctx,
+        );
+      [p1, p2, p3, p4];
     | _ => []
     }
   | Item(t, _, o) =>
-    switch t {
+    switch (t) {
     | Mushroom => [Particle.make_score(o.score, (o.pos.x, o.pos.y), ctx)]
     | _ => []
     }

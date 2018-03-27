@@ -9,7 +9,9 @@ type canvasElement;
 [@bs.val] external window : Dom.window = "";
 
 /* external createImg: (_ [@bs.as "img"]) -> document -> imageElement = "createElement" [@@bs.send] */
-[@bs.send] external createImg : (Dom.document, [@bs.as "img"] _) => imageElement = "createElement";
+[@bs.send]
+external createImg : (Dom.document, [@bs.as "img"] _) => imageElement =
+  "createElement";
 
 [@bs.val] external requestAnimationFrame : (float => unit) => unit = "";
 
@@ -29,7 +31,9 @@ external addEventListenerImg :
 /* unsafe casts */
 external imageElementToJsObj : imageElement => Js.t({..}) = "%identity";
 
-external canvasRenderingContext2DToJsObj : canvasRenderingContext2D => Js.t({..}) = "%identity";
+external canvasRenderingContext2DToJsObj :
+  canvasRenderingContext2D => Js.t({..}) =
+  "%identity";
 
 external canvasElementToJsObj : canvasElement => Js.t({..}) = "%identity";
 
