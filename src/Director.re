@@ -550,7 +550,7 @@ let keydown = evt => {
     | 66 => pressed_keys.bbox = (pressed_keys.bbox + 1) mod 2
     | _ => ()
     };
-  Js.true_;
+  true;
 };
 
 /* Keyup event handler translates a key release */
@@ -569,5 +569,5 @@ let keyup = evt => {
     | 83 => pressed_keys.down = false
     | _ => ()
     };
-  Js.true_;
+  true;
 };

@@ -33,14 +33,14 @@ let load = _ => {
       Dom_html.document,
       "keydown",
       Director.keydown,
-      Js.true_,
+      true,
     );
   let _ =
     Dom_html.addEventListener(
       Dom_html.document,
       "keyup",
       Director.keyup,
-      Js.true_,
+      true,
     );
   let () = Pg.init();
   Director.update_loop(
@@ -75,9 +75,9 @@ let preload = _ => {
           "load",
           _ev => {
             inc_counter();
-            Js.true_;
+            true;
           },
-          Js.true_,
+          true,
         ),
       );
     },
@@ -87,6 +87,6 @@ let preload = _ => {
 Dom_html.windowToJsObj(Dom_html.window)##onload#=(
                                                     _ => {
                                                       ignore(preload());
-                                                      Js.true_;
+                                                      true;
                                                     }
                                                   );

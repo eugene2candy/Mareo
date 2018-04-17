@@ -20,12 +20,12 @@ external getElementById : (Dom.document, string) => option(Dom.element) = "";
 
 [@bs.send]
 external addEventListener :
-  (Dom.document, string, Dom.event_like('a) => Js.boolean, Js.boolean) => unit =
+  (Dom.document, string, Dom.event_like('a) => bool, bool) => unit =
   "";
 
 [@bs.send]
 external addEventListenerImg :
-  (imageElement, string, Dom.event_like('a) => Js.boolean, Js.boolean) => unit =
+  (imageElement, string, Dom.event_like('a) => bool, bool) => unit =
   "addEventListener";
 
 /* unsafe casts */

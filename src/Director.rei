@@ -3,7 +3,7 @@ let update_loop:
   (Dom_html.canvasElement, (Object.collidable, list(Object.collidable)), (float, float)) => unit;
 
 /* Keydown event handler function */
-let keydown: Dom.keyboardEvent => Js.boolean;
+let keydown: Dom.keyboardEvent => bool;
 
 /* Keyup event handler function */
-let keyup: Dom.keyboardEvent => Js.boolean;
+let keyup: Dom.keyboardEvent => bool;
